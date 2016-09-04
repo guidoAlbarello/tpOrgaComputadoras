@@ -58,7 +58,7 @@ typedef struct GraphicSettings{
 
 bool isAValidNumberInAString(char* numberRepresentedAsAString);
 void invalidParameter(char* errorMSG);
-void validateResolutionArgument(char* argument, int* width, int* height);
+bool validateResolutionArgument(char* argument, int* width, int* height);
 void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace,GraphicSettings** graphicSettings);
 SetSpace *initializeDefaultSpace();
 GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file);
@@ -94,24 +94,25 @@ void invalidParameter(char* errorMSG){
 
 
 
-void validateResolutionArgument(char* argument, int* width, int* height){
+bool validateResolutionArgument(char* argument, int* width, int* height){
   //Resolution must be NUMBERxNUMBER ( 100x100 )
   if(strlen(argument) == 0)
-    invalidParameter(ERROR_INVALID_RESOLUTION);
+    return false;
   char delimiter[1] = "x";
   char* firstNumberString = strsep(&argument,delimiter);
   char* secondNumberString = strsep(&argument,delimiter);
   if(!firstNumberString || !secondNumberString){
-    invalidParameter(ERROR_INVALID_RESOLUTION);
+    return false;
   }
 
   if(!isAValidNumberInAString(firstNumberString) ||
   !isAValidNumberInAString(secondNumberString)){
-    invalidParameter(ERROR_INVALID_RESOLUTION);
+    return false;
   }
 
 	*width = atoi(firstNumberString);
 	*height = atoi(secondNumberString);
+	return true;
 }
 
 
@@ -124,15 +125,19 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 	char file[] = DEFAULT_FILE;
 	*setSpace = initializeDefaultSpace();
 
-	int c;
+	int argumentOption;
 	opterr = 0;
-	while ((c = getopt (argc, argv, "r:")) != -1)
-		switch (c)
+	while ((argumentOption = getopt (argc, argv, "r:")) != -1)
+		switch (argumentOption)
 			{
 			case RESOLUTION:
-				validateResolutionArgument(optarg,&widthResolution,&heightResolution);
+				if(!validateResolutionArgument(optarg,&widthResolution,&heightResolution)){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_RESOLUTION);
+				}
 				break;
 			case '?'://ALGUN PARAMETRO NO TIENE PAR
+				free((*setSpace));
 				invalidParameter("fatal: some of the input parameters were not specified");
 				break;
 			default:
