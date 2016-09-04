@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <juliaSet.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
@@ -22,10 +22,7 @@
 
 
 
-typedef struct ComplexNumber{
-	double realPart;
-	double imaginaryPart;
-} ComplexNumber;
+
 
 typedef struct SetSpace{
 	ComplexNumber offset;													// primero los declare como punteros asi no los pasamos por valor, pero la verdad son dos putos doubles,paja, sacando q prefieras q sea asi jojo
@@ -65,7 +62,7 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file
 void printOutput(GraphicSettings *aGraphicSettings);
 FILE *getFileOutput(char *aFileName);
 int getResolution(char *aType, char *anImageResolution);
-double absoluteValue(ComplexNumber z);
+
 unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c);
 void calculatePixelsPosition(SetSpace *aSpace, Pixel *pixels, int resolutionWidth, int resolutionHeight);
 void findJuliaSet (SetSpace *aSpace, Pixel *pixels, int width,int height);
@@ -220,27 +217,11 @@ int getResolution(char *aType, char *anImageResolution){
 
 
 
-double absoluteValue(ComplexNumber z){
-
-	double squareSum = (z.realPart * z.realPart) + (z.imaginaryPart * z.imaginaryPart);
-	return (double) sqrt(squareSum);
-}
 
 
 
-unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c){
-	int i;
-	for(i = 0; i < 256; i++){
-		if(absoluteValue(z) > 2)
-			break;
-		double oldRealPart = z.realPart;
-		double oldImaginaryPart = z.imaginaryPart;
-		z.realPart = (oldRealPart * oldRealPart) - (oldImaginaryPart * oldImaginaryPart) + c.realPart;
-		z.imaginaryPart = (2 * oldRealPart * oldImaginaryPart) + c.imaginaryPart;
-	}
 
-	return i;
-}
+
 
 
 
