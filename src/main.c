@@ -18,10 +18,12 @@
 #define DEFAULT_FILE "file.pgm"
 
 #define RESOLUTION 'r'
+#define CONSTANTC 'C'
 #define ERROR_INVALID_RESOLUTION "fatal: invalid resolution specification."
-
-
-
+#define ERROR_INVALID_CONSTANTC "fatal: invalid constant c specification."
+#define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification"
+#define ERROR_OPTION_WITH_NO_PARAMETER "fatal: some of the input parameters were not specified"
+#define POSIBLE_OPTIONS "r:C:"
 
 
 typedef struct SetSpace{
@@ -114,6 +116,47 @@ bool validateResolutionArgument(char* argument, int* width, int* height){
 
 
 
+bool containsTheImaginaryIndicator(char* imaginaryNumberString){
+	if(imaginaryNumberString[strlen(imaginaryNumberString)-1] != 'i'){
+		return false;
+	}
+	return true;
+}
+
+
+
+bool validateConstantCArgument(char* argument,SetSpace* setSpace){
+	if(strlen(argument) == 0)
+    return false;
+
+  char delimiter[2] = "+";
+  char* realNumberString = strsep(&argument,delimiter);
+  char* imaginaryNumberString = strsep(&argument,delimiter);
+
+  if(!realNumberString || !imaginaryNumberString){
+    return false;
+  }
+
+	if( !containsTheImaginaryIndicator(imaginaryNumberString)){
+		return false;
+	}
+
+	imaginaryNumberString = strsep(&imaginaryNumberString,"i");
+
+  if(!isAValidNumberInAString(realNumberString) ||
+  !isAValidNumberInAString(imaginaryNumberString)){
+    return false;
+  }
+
+	(*setSpace).constantC.realPart = atoi(realNumberString);
+	(*setSpace).constantC.imaginaryPart = atoi(imaginaryNumberString);
+	return true;
+}
+
+
+
+
+
 void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace,GraphicSettings** graphicSettings){
 
 	int widthResolution = WIDTH;
@@ -124,7 +167,7 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 
 	int argumentOption;
 	opterr = 0;
-	while ((argumentOption = getopt (argc, argv, "r:")) != -1)
+	while ((argumentOption = getopt (argc, argv, POSIBLE_OPTIONS)) != -1)
 		switch (argumentOption)
 			{
 			case RESOLUTION:
@@ -133,11 +176,20 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 					invalidParameter(ERROR_INVALID_RESOLUTION);
 				}
 				break;
+
+			case CONSTANTC:
+				if(!validateConstantCArgument(optarg,*setSpace)){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_CONSTANTC);
+				}
+				break;
 			case '?'://ALGUN PARAMETRO NO TIENE PAR
 				free((*setSpace));
-				invalidParameter("fatal: some of the input parameters were not specified");
+				invalidParameter(ERROR_OPTION_WITH_NO_PARAMETER);
 				break;
 			default:
+				free((*setSpace));
+				invalidParameter(ERROR_UNKNOWN_ARGUMENT);
 				abort ();
 			}
 
