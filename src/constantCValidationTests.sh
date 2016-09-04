@@ -28,7 +28,7 @@ echo "salida: "
 ./tp0 -C 10+i
 echo -e "\n"
 
-echo -e  "ARGUMENTO: -C 10+10\n"
+echo -e  "ARGUMENTO: -C -0.4+0.6i\n"
 echo "salida: "
-./tp0 -C 10+10
+./tp0 -C -0.4+0.6i
 echo -e "\n"

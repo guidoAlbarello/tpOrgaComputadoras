@@ -19,11 +19,13 @@
 
 #define RESOLUTION 'r'
 #define CONSTANTC 'C'
+#define CENTER 'c'
 #define ERROR_INVALID_RESOLUTION "fatal: invalid resolution specification."
 #define ERROR_INVALID_CONSTANTC "fatal: invalid constant c specification."
 #define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification"
 #define ERROR_OPTION_WITH_NO_PARAMETER "fatal: some of the input parameters were not specified"
-#define POSIBLE_OPTIONS "r:C:"
+#define ERROR_INVALID_CENTER "fatal: invalid center specification"
+#define POSIBLE_OPTIONS "r:C:c:"
 
 
 typedef struct SetSpace{
@@ -125,14 +127,48 @@ bool containsTheImaginaryIndicator(char* imaginaryNumberString){
 
 
 
-bool validateConstantCArgument(char* argument,SetSpace* setSpace){
+bool isAValidDoubleInAString(char* number,double* d){
+	if (strlen(number) == 0)
+		return false;
+	return sscanf (number,"%lf",d);
+
+}
+
+
+
+
+
+bool isAValidComplexNumberString(char* argument,double* realPart, double* imaginaryPart){
 	if(strlen(argument) == 0)
     return false;
 
-  char delimiter[2] = "+";
+	double realSign = 1;
+	double imaginarySign = 1;
+
+	char delimiter[2];
+	if( argument[0] == '+'){
+		strsep(&argument,"+");
+	}
+	else{
+		if (argument[0] == '-'){
+			strsep(&argument,"-");
+			realSign = -1;
+		}
+	}
+
+	if(strchr(argument,'+')){
+		strcpy(delimiter, "+");
+	}
+	else{
+		if(strchr(argument,'-')){
+			strcpy(delimiter, "-");
+			imaginarySign = -1;
+		}
+
+	}
+
   char* realNumberString = strsep(&argument,delimiter);
   char* imaginaryNumberString = strsep(&argument,delimiter);
-
   if(!realNumberString || !imaginaryNumberString){
     return false;
   }
@@ -143,16 +179,42 @@ bool validateConstantCArgument(char* argument,SetSpace* setSpace){
 
 	imaginaryNumberString = strsep(&imaginaryNumberString,"i");
 
-  if(!isAValidNumberInAString(realNumberString) ||
-  !isAValidNumberInAString(imaginaryNumberString)){
+
+  if(!isAValidDoubleInAString(realNumberString,realPart) ||
+  !isAValidDoubleInAString(imaginaryNumberString,imaginaryPart)){
     return false;
   }
 
-	(*setSpace).constantC.realPart = atoi(realNumberString);
-	(*setSpace).constantC.imaginaryPart = atoi(imaginaryNumberString);
+	*realPart *= realSign;
+	*imaginaryPart *= imaginarySign;
+
 	return true;
 }
 
+
+
+
+
+bool validateConstantCArgument(char* argument,SetSpace* setSpace){
+	double* cRealPart = &((*setSpace).constantC.realPart);
+	double* cImaginaryPart = &((*setSpace).constantC.imaginaryPart);
+	if(!isAValidComplexNumberString(argument,cRealPart,cImaginaryPart)){
+		return false;
+	}
+	return true;
+}
+
+
+
+
+bool validateCenterArgument(char* argument,SetSpace* setSpace){
+	double* centerRealPart = &((*setSpace).offset.realPart);
+	double* centerImaginaryPart = &((*setSpace).offset.imaginaryPart);
+	if(!isAValidComplexNumberString(argument,centerRealPart,centerImaginaryPart)){
+		return false;
+	}
+	return true;
+}
 
 
 
@@ -183,6 +245,14 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 					invalidParameter(ERROR_INVALID_CONSTANTC);
 				}
 				break;
+
+			case CENTER:
+				if(! validateCenterArgument(optarg,*setSpace)){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_CENTER);
+				}
+				break;
+
 			case '?'://ALGUN PARAMETRO NO TIENE PAR
 				free((*setSpace));
 				invalidParameter(ERROR_OPTION_WITH_NO_PARAMETER);
