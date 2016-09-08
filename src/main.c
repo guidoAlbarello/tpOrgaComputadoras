@@ -6,17 +6,19 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define C_REAL_PART -0.4
-#define C_IMAGINARY_PART 0.6
-#define WIDTH 7680
-#define HEIGHT 4320
-#define OFFSET_REAL_PART 2.5
-#define OFFSET_IMAGINARY_PART 2.5
-#define SPACE_HEIGHT 10
-#define SPACE_WIDTH 10
+#define C_REAL_PART 0.285
+#define WIDTH 640
+#define HEIGHT 480
+#define OFFSET_REAL_PART 0
+#define OFFSET_IMAGINARY_PART 0
+#define SPACE_HEIGHT 4
+#define SPACE_WIDTH 4
 #define BRIGHT_BOOST 3
 #define DEFAULT_FILE "file.pgm"
 
+#define WIDTH_OPTION 'w'
+#define HEIGHT_OPTION 'H'
+#define FILE_OPTION 'o'
 #define RESOLUTION 'r'
 #define CONSTANTC 'C'
 #define CENTER 'c'
@@ -25,7 +27,11 @@
 #define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification"
 #define ERROR_OPTION_WITH_NO_PARAMETER "fatal: some of the input parameters were not specified"
 #define ERROR_INVALID_CENTER "fatal: invalid center specification"
-#define POSIBLE_OPTIONS "r:C:c:"
+#define ERROR_INVALID_WIDTH "fatal: invalid width specification"
+#define ERROR_INVALID_HEIGHT "fatal: invalid height specification"
+#define ERROR_INVALID_FILE "fatal: invalid file specification"
+#define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the sistem could not open the output file"
+#define POSIBLE_OPTIONS "r:C:c:w:H:o:"
 
 
 typedef struct SetSpace{
@@ -44,12 +50,8 @@ typedef struct GraphicSettings{
 	int widthResolution;
 	int heightResolution;
 	Pixel *pixelGrid;
-	FILE *fileOuptut;
+	FILE *fileOutput;
 } GraphicSettings;
-
-
-
-
 
 
 
@@ -62,7 +64,7 @@ void invalidParameter(char* errorMSG);
 bool validateResolutionArgument(char* argument, int* width, int* height);
 void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace,GraphicSettings** graphicSettings);
 SetSpace *initializeDefaultSpace();
-GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file);
+GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file, bool printToAFile);
 void printOutput(GraphicSettings *aGraphicSettings);
 FILE *getFileOutput(char *aFileName);
 int getResolution(char *aType, char *anImageResolution);
@@ -89,7 +91,7 @@ bool isAValidNumberInAString(char* numberRepresentedAsAString){
 
 
 void invalidParameter(char* errorMSG){
-  printf("%s\n",errorMSG);
+  perror(errorMSG);
   exit(EXIT_FAILURE);
 }
 
@@ -113,7 +115,10 @@ bool validateResolutionArgument(char* argument, int* width, int* height){
 
 	*width = atoi(firstNumberString);
 	*height = atoi(secondNumberString);
-	return true;
+	if(*width > 0 && *height > 0){
+		return true;
+	}
+	return false;
 }
 
 
@@ -164,7 +169,6 @@ bool isAValidComplexNumberString(char* argument,double* realPart, double* imagin
 			strcpy(delimiter, "-");
 			imaginarySign = -1;
 		}
-
 	}
 
   char* realNumberString = strsep(&argument,delimiter);
@@ -194,7 +198,6 @@ bool isAValidComplexNumberString(char* argument,double* realPart, double* imagin
 
 
 
-
 bool validateConstantCArgument(char* argument,SetSpace* setSpace){
 	double* cRealPart = &((*setSpace).constantC.realPart);
 	double* cImaginaryPart = &((*setSpace).constantC.imaginaryPart);
@@ -219,10 +222,34 @@ bool validateCenterArgument(char* argument,SetSpace* setSpace){
 
 
 
+bool validateHeightArgument(char* argument,SetSpace* setSpace){
+	if(!isAValidDoubleInAString(argument,&(setSpace->height))) return false;
+	if( setSpace->height <= 0) return false;
+	return true;
+}
+
+bool validateWidthArgument(char* argument,SetSpace* setSpace){
+	if(!isAValidDoubleInAString(argument,&(setSpace->width))) return false;
+	if( setSpace->width <= 0) return false;
+	return true;
+}
+
+
+bool shouldPrintToStandardOutput(char* argument){
+	if(strcmp(argument,"-")){
+		return true;
+	}
+	return false;
+}
+
+
+
+
 void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace,GraphicSettings** graphicSettings){
 
 	int widthResolution = WIDTH;
 	int heightResolution = HEIGHT;
+	bool printToAFile = true;
 
 	char file[] = DEFAULT_FILE;
 	*setSpace = initializeDefaultSpace();
@@ -253,6 +280,29 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 				}
 				break;
 
+			case HEIGHT_OPTION:
+				if(! validateHeightArgument(optarg,*setSpace)){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_HEIGHT);
+				}
+			break;
+
+			case WIDTH_OPTION:
+				if(! validateWidthArgument(optarg,*setSpace)){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_WIDTH);
+				}
+				break;
+			case FILE_OPTION:
+				if (strlen(optarg) == 0 || !optarg){
+					free((*setSpace));
+					invalidParameter(ERROR_INVALID_FILE);
+				}
+				printToAFile = shouldPrintToStandardOutput(optarg);
+				if(printToAFile){
+					strcpy(optarg,file);
+				}
+				break;
 			case '?'://ALGUN PARAMETRO NO TIENE PAR
 				free((*setSpace));
 				invalidParameter(ERROR_OPTION_WITH_NO_PARAMETER);
@@ -263,7 +313,7 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 				abort ();
 			}
 
-	*graphicSettings = initializeGraphicSettings(widthResolution,heightResolution,file);
+	*graphicSettings = initializeGraphicSettings(widthResolution,heightResolution,file,printToAFile);
 
 }
 
@@ -273,37 +323,45 @@ SetSpace *initializeDefaultSpace(){
 
 	SetSpace *aNewSpace = malloc(sizeof(SetSpace));
 
-	(*aNewSpace).offset.realPart = OFFSET_REAL_PART;
-	(*aNewSpace).offset.imaginaryPart = OFFSET_IMAGINARY_PART;
+	aNewSpace->offset.realPart = OFFSET_REAL_PART;
+	aNewSpace->offset.imaginaryPart = OFFSET_IMAGINARY_PART;
 
-	(*aNewSpace).constantC.realPart = C_REAL_PART;
-	(*aNewSpace).constantC.imaginaryPart = C_IMAGINARY_PART;
+	aNewSpace->constantC.realPart = C_REAL_PART;
+	//No toma si defino una constante con ese valor
+	aNewSpace->constantC.imaginaryPart = -0.01;
 
-	(*aNewSpace).width = SPACE_WIDTH;									// hay una mejor que atoi que chequea errores
-	(*aNewSpace).height = SPACE_HEIGHT;
+	aNewSpace->width = SPACE_WIDTH;									// hay una mejor que atoi que chequea errores
+	aNewSpace->height = SPACE_HEIGHT;
 
 	return aNewSpace;
 }
 
 
 
-GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file){
+GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file, bool printToAFile){
 
 	GraphicSettings * aNewGraphicSettings = malloc(sizeof(GraphicSettings));
-	(*aNewGraphicSettings).widthResolution = widtRes;
-	(*aNewGraphicSettings).heightResolution = heightRes;
+	aNewGraphicSettings->widthResolution = widtRes;
+	aNewGraphicSettings->heightResolution = heightRes;
 
-	(*aNewGraphicSettings).pixelGrid = malloc(sizeof(Pixel) * (*aNewGraphicSettings).widthResolution * (*aNewGraphicSettings).heightResolution);
-	for(int i = 0; i < (*aNewGraphicSettings).heightResolution; i++){
-		for(int j = 0; j < (*aNewGraphicSettings).widthResolution; j++){
+	(*aNewGraphicSettings).pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
+	for(int i = 0; i < aNewGraphicSettings->heightResolution; i++){
+		for(int j = 0; j < aNewGraphicSettings->widthResolution; j++){
 			Pixel aNewPixel;
 			aNewPixel.position.realPart = i;
 			aNewPixel.position.imaginaryPart = j;
 			aNewPixel.bright = 0;
-			(*aNewGraphicSettings).pixelGrid[i * (*aNewGraphicSettings).widthResolution + j] = aNewPixel;
+			aNewGraphicSettings->pixelGrid[i * aNewGraphicSettings->widthResolution + j] = aNewPixel;
 		}
 	}
-	(*aNewGraphicSettings).fileOuptut = getFileOutput(file);
+
+	if(printToAFile){
+		aNewGraphicSettings->fileOutput = getFileOutput(file);
+	}
+	else{
+		aNewGraphicSettings->fileOutput = stdout;
+	}
+
 	return aNewGraphicSettings;
 }
 
@@ -311,22 +369,26 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes,char* file
 
 void printOutput(GraphicSettings *aGraphicSettings){
 
-	fprintf((*aGraphicSettings).fileOuptut, "P5\n%u %u 255\n", (*aGraphicSettings).widthResolution, (*aGraphicSettings).heightResolution);
+	fprintf((*aGraphicSettings).fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
 	for(int i = 0; i < (*aGraphicSettings).heightResolution; i++){
 		for(int j = 0; j < (*aGraphicSettings).widthResolution; j++){
-			char pixelToWrite = (*aGraphicSettings).pixelGrid[i * (*aGraphicSettings).widthResolution + j].bright * BRIGHT_BOOST;
-			fputc(pixelToWrite, (*aGraphicSettings).fileOuptut);
+			char pixelToWrite = aGraphicSettings->pixelGrid[i * aGraphicSettings->widthResolution + j].bright * BRIGHT_BOOST;
+			fputc(pixelToWrite, (*aGraphicSettings).fileOutput);
 		}
 	}
-	fclose((*aGraphicSettings).fileOuptut);
+	if(aGraphicSettings->fileOutput != stdout)
+		fclose(aGraphicSettings->fileOutput);
 }
 
 
 
 FILE *getFileOutput(char *aFileName){
 	FILE *outputFile = fopen(aFileName, "wb");
-	if (outputFile == NULL)
-		perror("Error");
+	if (outputFile == NULL){
+		fprintf(stderr, "%s\n",ERROR_TRYING_TO_OPEN_THE_FILE);
+		exit(EXIT_FAILURE);
+	}
+
 	return outputFile;
 }
 
@@ -401,11 +463,19 @@ int main(int argc, char *argv[]){												//por ahora argv tiene el orden = 1
 																				//3. offset 4. C 5. width 6. height
 	SetSpace* aSpace;
 	GraphicSettings* theGraphicSettings;
+
 	inputValidationAndInitialization(argc, argv, &aSpace, &theGraphicSettings);
-	findJuliaSet(aSpace, (*theGraphicSettings).pixelGrid,(*theGraphicSettings).widthResolution,(*theGraphicSettings).heightResolution);
+
+	findJuliaSet(aSpace, theGraphicSettings->pixelGrid,theGraphicSettings->widthResolution,theGraphicSettings->heightResolution);
 	printOutput(theGraphicSettings);
 
+/*
+	printf("ATRIBUTOS: \n Resolution width: %d\n Resolution height %d\n offset: %lf + %lf i\n constantC: %lf + %lf i\n Rectangle: %lf x %lf\n", theGraphicSettings->widthResolution,theGraphicSettings->heightResolution,
+	aSpace->offset.realPart, aSpace->offset.imaginaryPart,aSpace->constantC.realPart, aSpace->constantC.imaginaryPart,
+	aSpace->width,aSpace->height );
+*/
 	free(aSpace);
+	free(theGraphicSettings->pixelGrid);
 	free(theGraphicSettings);
 
 	return 0;
