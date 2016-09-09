@@ -63,7 +63,7 @@ typedef struct GraphicSettings {
 bool isAValidNumberInAString(char* numberRepresentedAsAString);
 void invalidParameter(char* errorMSG);
 bool validateResolutionArgument(char* argument, int* width, int* height);
-void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings);
+bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings);
 SetSpace *initializeDefaultSpace();
 GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile);
 bool printOutput(GraphicSettings *aGraphicSettings);
@@ -244,7 +244,7 @@ bool shouldPrintToStandardOutput(char* argument) {
 
 
 
-void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings) {
+bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings) {
 
 	int widthResolution = WIDTH;
 	int heightResolution = HEIGHT;
@@ -314,6 +314,12 @@ void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 
 	*graphicSettings = initializeGraphicSettings(widthResolution, heightResolution, file, printToAFile);
 
+	if(graphicSettings->fileOutput == NULL){
+		fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -388,11 +394,6 @@ bool printOutput(GraphicSettings *aGraphicSettings) {
 
 FILE *getFileOutput(char *aFileName) {
 	FILE *outputFile = fopen(aFileName, "wb");
-	if (outputFile == NULL) {
-		fprintf(stderr, "%s\n", ERROR_TRYING_TO_OPEN_THE_FILE);
-		exit(EXIT_FAILURE);
-	}
-
 	return outputFile;
 }
 
@@ -464,7 +465,11 @@ int main(int argc, char *argv[]) {
 	SetSpace* aSpace;
 	GraphicSettings* theGraphicSettings;
 
-	inputValidationAndInitialization(argc, argv, &aSpace, &theGraphicSettings);
+	if(!inputValidationAndInitialization(argc, argv, &aSpace, &theGraphicSettings)){
+		clean(aSpace,theGraphicSettings);
+		exit(EXIT_FAILURE);
+	}
+
 
 	findJuliaSet(aSpace, theGraphicSettings->pixelGrid, theGraphicSettings->widthResolution, theGraphicSettings->heightResolution);
 
