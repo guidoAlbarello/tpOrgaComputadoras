@@ -66,7 +66,7 @@ bool validateResolutionArgument(char* argument, int* width, int* height);
 void inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings);
 SetSpace *initializeDefaultSpace();
 GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile);
-void printOutput(GraphicSettings *aGraphicSettings);
+bool printOutput(GraphicSettings *aGraphicSettings);
 FILE *getFileOutput(char *aFileName);
 unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c);
 void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWidth, int resolutionHeight);
@@ -368,20 +368,20 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 
 
 
-void printOutput(GraphicSettings *aGraphicSettings) {
+bool printOutput(GraphicSettings *aGraphicSettings) {
 	fprintf(aGraphicSettings->fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
 	for (int i = 0; i < aGraphicSettings->heightResolution; i++) {
 		for (int j = 0; j < aGraphicSettings->widthResolution; j++) {
 			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
 			fputc(pixelToWrite, aGraphicSettings->fileOutput);
 			if (ferror(aGraphicSettings->fileOutput)){
-				fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
-				exit(EXIT_FAILURE);
+				return false;
 			}
 		}
 	}
 	if (aGraphicSettings->fileOutput != stdout)
 		fclose(aGraphicSettings->fileOutput);
+	return true;
 }
 
 
@@ -448,6 +448,16 @@ void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int  height) {
 }
 
 
+void clean(SetSpace* aSpace, GraphicSettings* theGraphicSettings){
+	free(aSpace);
+	for(int i = 0; i < theGraphicSettings->heightResolution;i++){
+		free(theGraphicSettings->pixelGrid[i]);
+	}
+	free(theGraphicSettings->pixelGrid);
+	free(theGraphicSettings);
+
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -457,19 +467,18 @@ int main(int argc, char *argv[]) {
 	inputValidationAndInitialization(argc, argv, &aSpace, &theGraphicSettings);
 
 	findJuliaSet(aSpace, theGraphicSettings->pixelGrid, theGraphicSettings->widthResolution, theGraphicSettings->heightResolution);
-	printOutput(theGraphicSettings);
+
+	if(!printOutput(theGraphicSettings)){
+		clean(aSpace,theGraphicSettings);
+		fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
+		exit(EXIT_FAILURE);
+	}
 
 	/*
 		printf("ATRIBUTOS: \n Resolution width: %d\n Resolution height %d\n offset: %lf + %lf i\n constantC: %lf + %lf i\n Rectangle: %lf x %lf\n", theGraphicSettings->widthResolution,theGraphicSettings->heightResolution,
 		aSpace->offset.realPart, aSpace->offset.imaginaryPart,aSpace->constantC.realPart, aSpace->constantC.imaginaryPart,
 		aSpace->width,aSpace->height );
 	*/
-	free(aSpace);
-	for(int i = 0; i < theGraphicSettings->heightResolution;i++){
-		free(theGraphicSettings->pixelGrid[i]);
-	}
-	free(theGraphicSettings->pixelGrid);
-	free(theGraphicSettings);
-
+	clean(aSpace,theGraphicSettings);
 	return 0;
 }
