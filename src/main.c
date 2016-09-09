@@ -50,7 +50,7 @@ typedef struct Pixel {
 typedef struct GraphicSettings {
 	int widthResolution;
 	int heightResolution;
-	Pixel *pixelGrid;
+	Pixel **pixelGrid;
 	FILE *fileOutput;
 } GraphicSettings;
 
@@ -69,8 +69,8 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 void printOutput(GraphicSettings *aGraphicSettings);
 FILE *getFileOutput(char *aFileName);
 unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c);
-void calculatePixelsPosition(SetSpace *aSpace, Pixel *pixels, int resolutionWidth, int resolutionHeight);
-void findJuliaSet(SetSpace *aSpace, Pixel *pixels, int width, int height);
+void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWidth, int resolutionHeight);
+void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int height);
 
 
 
@@ -343,14 +343,16 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 	aNewGraphicSettings->widthResolution = widtRes;
 	aNewGraphicSettings->heightResolution = heightRes;
 
-	(*aNewGraphicSettings).pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
+	//aNewGraphicSettings->pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
+	aNewGraphicSettings->pixelGrid = (Pixel **)malloc(sizeof(Pixel *) * aNewGraphicSettings->heightResolution);
 	for (int i = 0; i < aNewGraphicSettings->heightResolution; i++) {
+		aNewGraphicSettings->pixelGrid[i] = (Pixel *)malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution);
 		for (int j = 0; j < aNewGraphicSettings->widthResolution; j++) {
 			Pixel aNewPixel;
 			aNewPixel.position.realPart = i;
 			aNewPixel.position.imaginaryPart = j;
 			aNewPixel.bright = 0;
-			aNewGraphicSettings->pixelGrid[i * aNewGraphicSettings->widthResolution + j] = aNewPixel;
+			aNewGraphicSettings->pixelGrid[i][j] = aNewPixel;
 		}
 	}
 
@@ -367,12 +369,12 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 
 
 void printOutput(GraphicSettings *aGraphicSettings) {
-	fprintf((*aGraphicSettings).fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
-	for (int i = 0; i < (*aGraphicSettings).heightResolution; i++) {
-		for (int j = 0; j < (*aGraphicSettings).widthResolution; j++) {
-			char pixelToWrite = aGraphicSettings->pixelGrid[i * aGraphicSettings->widthResolution + j].bright * BRIGHT_BOOST;
-			fputc(pixelToWrite, (*aGraphicSettings).fileOutput);
-			if (ferror((*aGraphicSettings).fileOutput) {
+	fprintf(aGraphicSettings->fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
+	for (int i = 0; i < aGraphicSettings->heightResolution; i++) {
+		for (int j = 0; j < aGraphicSettings->widthResolution; j++) {
+			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
+			fputc(pixelToWrite, aGraphicSettings->fileOutput);
+			if (ferror(aGraphicSettings->fileOutput)){
 				fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
 				exit(EXIT_FAILURE);
 			}
@@ -401,7 +403,7 @@ FILE *getFileOutput(char *aFileName) {
 
 
 
-void calculatePixelsPosition(SetSpace *aSpace, Pixel *pixels, int resolutionWidth, int resolutionHeight) {
+void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWidth, int resolutionHeight) {
 	double scaleFactorRealAxis = (*aSpace).width / resolutionWidth;
 	double scaleFactorImaginaryAxis = (*aSpace).height / resolutionHeight;
 
@@ -417,30 +419,30 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel *pixels, int resolutionWidt
 		for (int j = 0; j < resolutionWidth; j++) {
 
 			if (i == 0 && j == 0) {
-				pixels[i * resolutionWidth + j].position.realPart = startPointRealAxis;
-				pixels[i * resolutionWidth + j].position.imaginaryPart = startPointImaginaryAxis;
+				pixels[i][j].position.realPart = startPointRealAxis;
+				pixels[i][j].position.imaginaryPart = startPointImaginaryAxis;
 			}
 			else {
-				pixels[i * resolutionWidth + j].position.realPart = positionIncrementRealAxis;;
-				pixels[i * resolutionWidth + j].position.imaginaryPart = positionIncrementImaginaryAxis;
+				pixels[i][j].position.realPart = positionIncrementRealAxis;;
+				pixels[i][j].position.imaginaryPart = positionIncrementImaginaryAxis;
 			}
 
-			positionIncrementRealAxis += middlePointRealAxis;
+			positionIncrementRealAxis += scaleFactorRealAxis;
 		}
-		positionIncrementImaginaryAxis += middlePointImaginaryAxis;
+		positionIncrementImaginaryAxis += scaleFactorImaginaryAxis;
 		positionIncrementRealAxis = startPointRealAxis;
 	}
 }
 
 
 
-void findJuliaSet(SetSpace *aSpace, Pixel *pixels, int width, int  height) {
+void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int  height) {
 
 	calculatePixelsPosition(aSpace, pixels, width, height);
 
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			pixels[i * width + j].bright = calculateEscapeVelocity(pixels[i * width + j].position, (*aSpace).constantC);
+			pixels[i][j].bright = calculateEscapeVelocity(pixels[i][j].position, (*aSpace).constantC);
 		}
 	}
 }
@@ -463,6 +465,9 @@ int main(int argc, char *argv[]) {
 		aSpace->width,aSpace->height );
 	*/
 	free(aSpace);
+	for(int i = 0; i < theGraphicSettings->heightResolution;i++){
+		free(theGraphicSettings->pixelGrid[i]);
+	}
 	free(theGraphicSettings->pixelGrid);
 	free(theGraphicSettings);
 
