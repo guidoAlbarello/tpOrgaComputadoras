@@ -314,7 +314,7 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 
 	*graphicSettings = initializeGraphicSettings(widthResolution, heightResolution, file, printToAFile);
 
-	if(graphicSettings->fileOutput == NULL){
+	if(graphicSettings == NULL){
 		fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
 		return false;
 	}
@@ -379,7 +379,12 @@ bool printOutput(GraphicSettings *aGraphicSettings) {
 	for (int i = 0; i < aGraphicSettings->heightResolution; i++) {
 		for (int j = 0; j < aGraphicSettings->widthResolution; j++) {
 			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
-			fputc(pixelToWrite, aGraphicSettings->fileOutput);
+
+			if (aGraphicSettings->fileOutput == stdout)			
+				printf("%d",pixelToWrite);
+			else
+				fputc(pixelToWrite, aGraphicSettings->fileOutput);
+
 			if (ferror(aGraphicSettings->fileOutput)){
 				return false;
 			}
