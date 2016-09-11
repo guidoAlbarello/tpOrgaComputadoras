@@ -80,7 +80,8 @@ void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int height);
 bool isAValidNumberInAString(char* numberRepresentedAsAString) {
 	if (strlen(numberRepresentedAsAString) == 0)
 		return false;
-	for (int i = 0; i < strlen(numberRepresentedAsAString); i++) {
+	int i;
+	for (i = 0; i < strlen(numberRepresentedAsAString); i++) {
 		if (!isdigit(numberRepresentedAsAString[i]))
 			return false;
 	}
@@ -351,9 +352,11 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 
 	//aNewGraphicSettings->pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
 	aNewGraphicSettings->pixelGrid = (Pixel **)malloc(sizeof(Pixel *) * aNewGraphicSettings->heightResolution);
-	for (int i = 0; i < aNewGraphicSettings->heightResolution; i++) {
+	int i;
+	int j;
+	for ( i = 0; i < aNewGraphicSettings->heightResolution; i++) {
 		aNewGraphicSettings->pixelGrid[i] = (Pixel *)malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution);
-		for (int j = 0; j < aNewGraphicSettings->widthResolution; j++) {
+		for (j = 0; j < aNewGraphicSettings->widthResolution; j++) {
 			Pixel aNewPixel;
 			aNewPixel.position.realPart = i;
 			aNewPixel.position.imaginaryPart = j;
@@ -365,7 +368,7 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 	if (printToAFile) {
 		 aNewGraphicSettings->fileOutput = getFileOutput(file);
 		 if(aNewGraphicSettings->fileOutput == NULL){
-			 	for(int i = 0; i < aNewGraphicSettings->heightResolution;i++){
+			 	for(i = 0; i < aNewGraphicSettings->heightResolution;i++){
 		 			free(aNewGraphicSettings->pixelGrid[i]);
 			 	}
 			 	free(aNewGraphicSettings->pixelGrid);
@@ -384,8 +387,9 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 
 bool printOutput(GraphicSettings *aGraphicSettings) {
 	fprintf(aGraphicSettings->fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
-	for (int i = 0; i < aGraphicSettings->heightResolution; i++) {
-		for (int j = 0; j < aGraphicSettings->widthResolution; j++) {
+	int i,j;
+	for ( i = 0; i < aGraphicSettings->heightResolution; i++) {
+		for ( j = 0; j < aGraphicSettings->widthResolution; j++) {
 			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
 
 			if (aGraphicSettings->fileOutput == stdout)
@@ -430,8 +434,9 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWid
 
 	double positionIncrementRealAxis = startPointRealAxis;
 	double positionIncrementImaginaryAxis = startPointImaginaryAxis;
-	for (int i = 0; i < resolutionHeight; i++) {
-		for (int j = 0; j < resolutionWidth; j++) {
+	int i,j;
+	for (i = 0; i < resolutionHeight; i++) {
+		for (j = 0; j < resolutionWidth; j++) {
 
 			if (i == 0 && j == 0) {
 				pixels[i][j].position.realPart = startPointRealAxis;
@@ -454,9 +459,9 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWid
 void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int  height) {
 
 	calculatePixelsPosition(aSpace, pixels, width, height);
-
-	for (int i = 0; i < height; i++) {
-		for (int j = 0; j < width; j++) {
+	int i,j;
+	for (i = 0; i < height; i++) {
+		for (j = 0; j < width; j++) {
 			pixels[i][j].bright = calculateEscapeVelocity(pixels[i][j].position, (*aSpace).constantC);
 		}
 	}
@@ -468,7 +473,8 @@ void clean(SetSpace* aSpace, GraphicSettings* theGraphicSettings){
 		free(aSpace);
 	if(theGraphicSettings != NULL){
 		if (theGraphicSettings->pixelGrid != NULL) {
-			for(int i = 0; i < theGraphicSettings->heightResolution;i++){
+			int i;
+			for(i = 0; i < theGraphicSettings->heightResolution;i++){
 				if(theGraphicSettings->pixelGrid[i] != NULL)
 					free(theGraphicSettings->pixelGrid[i]);
 			}
