@@ -24,14 +24,14 @@
 #define CENTER 'c'
 #define ERROR_INVALID_RESOLUTION "fatal: invalid resolution specification."
 #define ERROR_INVALID_CONSTANTC "fatal: invalid constant c specification."
-#define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification"
-#define ERROR_OPTION_WITH_NO_PARAMETER "fatal: some of the input parameters were not specified"
-#define ERROR_INVALID_CENTER "fatal: invalid center specification"
-#define ERROR_INVALID_WIDTH "fatal: invalid width specification"
-#define ERROR_INVALID_HEIGHT "fatal: invalid height specification"
-#define ERROR_INVALID_FILE "fatal: invalid file specification"
-#define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the system could not open the output file"
-#define ERROR_TRYING_TO_WRITE_TO_FILE "fatal: the system could not write to output file"
+#define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification."
+#define ERROR_OPTION_WITH_NO_PARAMETER "fatal: some of the input parameters were not specified."
+#define ERROR_INVALID_CENTER "fatal: invalid center specification."
+#define ERROR_INVALID_WIDTH "fatal: invalid width specification."
+#define ERROR_INVALID_HEIGHT "fatal: invalid height specification."
+#define ERROR_INVALID_FILE "fatal: invalid file specification."
+#define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the system could not open the output file."
+#define ERROR_TRYING_TO_WRITE_TO_FILE "fatal: the system could not write to output file."
 #define POSIBLE_OPTIONS "r:C:c:w:H:o:"
 
 
@@ -67,7 +67,7 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 SetSpace *initializeDefaultSpace();
 GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile);
 bool printOutput(GraphicSettings *aGraphicSettings);
-FILE *getFileOutput(char *aFileName);
+FILE* getFileOutput(char *aFileName);
 unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c);
 void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWidth, int resolutionHeight);
 void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int height);
@@ -90,7 +90,7 @@ bool isAValidNumberInAString(char* numberRepresentedAsAString) {
 
 
 void invalidParameter(char* errorMSG) {
-	perror(errorMSG);
+	fprintf(stderr, "%s\n", errorMSG);
 	exit(EXIT_FAILURE);
 }
 
@@ -314,8 +314,8 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 
 	*graphicSettings = initializeGraphicSettings(widthResolution, heightResolution, file, printToAFile);
 
-	if(graphicSettings == NULL){
-		fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
+	if(*graphicSettings == NULL){
+		fprintf(stderr, "%s\n", ERROR_TRYING_TO_OPEN_THE_FILE);
 		return false;
 	}
 
@@ -363,7 +363,15 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 	}
 
 	if (printToAFile) {
-		aNewGraphicSettings->fileOutput = getFileOutput(file);
+		 aNewGraphicSettings->fileOutput = getFileOutput(file);
+		 if(aNewGraphicSettings->fileOutput == NULL){
+			 	for(int i = 0; i < aNewGraphicSettings->heightResolution;i++){
+		 			free(aNewGraphicSettings->pixelGrid[i]);
+			 	}
+			 	free(aNewGraphicSettings->pixelGrid);
+			 	free(aNewGraphicSettings);
+				return NULL;
+		 }
 	}
 	else {
 		aNewGraphicSettings->fileOutput = stdout;
@@ -380,8 +388,8 @@ bool printOutput(GraphicSettings *aGraphicSettings) {
 		for (int j = 0; j < aGraphicSettings->widthResolution; j++) {
 			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
 
-			if (aGraphicSettings->fileOutput == stdout)			
-				printf("%d",pixelToWrite);
+			if (aGraphicSettings->fileOutput == stdout)
+				printf("%u",pixelToWrite);
 			else
 				fputc(pixelToWrite, aGraphicSettings->fileOutput);
 
@@ -397,8 +405,9 @@ bool printOutput(GraphicSettings *aGraphicSettings) {
 
 
 
-FILE *getFileOutput(char *aFileName) {
-	FILE *outputFile = fopen(aFileName, "wb");
+FILE* getFileOutput(char *aFileName) {
+	 FILE* outputFile = fopen(aFileName, "wb");
+
 	return outputFile;
 }
 
@@ -455,13 +464,18 @@ void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int  height) {
 
 
 void clean(SetSpace* aSpace, GraphicSettings* theGraphicSettings){
-	free(aSpace);
-	for(int i = 0; i < theGraphicSettings->heightResolution;i++){
-		free(theGraphicSettings->pixelGrid[i]);
+	if(aSpace != NULL)
+		free(aSpace);
+	if(theGraphicSettings != NULL){
+		if (theGraphicSettings->pixelGrid != NULL) {
+			for(int i = 0; i < theGraphicSettings->heightResolution;i++){
+				if(theGraphicSettings->pixelGrid[i] != NULL)
+					free(theGraphicSettings->pixelGrid[i]);
+			}
+			free(theGraphicSettings->pixelGrid);
+		}
+		free(theGraphicSettings);
 	}
-	free(theGraphicSettings->pixelGrid);
-	free(theGraphicSettings);
-
 }
 
 
