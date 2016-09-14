@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <juliaSet.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
@@ -15,6 +14,8 @@
 #define SPACE_WIDTH 4
 #define BRIGHT_BOOST 1
 #define DEFAULT_FILE "file.pgm"
+#define MAX_ITERACION 255
+#define COND_CORTE_MOD_CUADRADO 4.0
 
 #define WIDTH_OPTION 'w'
 #define HEIGHT_OPTION 'H'
@@ -33,6 +34,12 @@
 #define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the system could not open the output file."
 #define ERROR_TRYING_TO_WRITE_TO_FILE "fatal: the system could not write to output file."
 #define POSIBLE_OPTIONS "r:C:c:w:H:o:"
+
+
+typedef struct ComplexNumber{
+	double realPart;
+	double imaginaryPart;
+} ComplexNumber;
 
 
 typedef struct SetSpace {
@@ -57,9 +64,6 @@ typedef struct GraphicSettings {
 
 
 
-
-
-
 bool isAValidNumberInAString(char* numberRepresentedAsAString);
 void invalidParameter(char* errorMSG);
 bool validateResolutionArgument(char* argument, int* width, int* height);
@@ -73,6 +77,26 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWid
 void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int height);
 
 
+
+double squareAbsoluteValue(ComplexNumber z){
+
+	double squareSum = (z.realPart * z.realPart) + (z.imaginaryPart * z.imaginaryPart);
+	return squareSum;
+}
+
+unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c){
+	int i;
+	for(i = 0; i < MAX_ITERACION; i++){
+		if(squareAbsoluteValue(z) > COND_CORTE_MOD_CUADRADO)
+			break;
+		double oldRealPart = z.realPart;
+		double oldImaginaryPart = z.imaginaryPart;
+		z.realPart = (oldRealPart * oldRealPart) - (oldImaginaryPart * oldImaginaryPart) + c.realPart;
+		z.imaginaryPart = (2 * oldRealPart * oldImaginaryPart) + c.imaginaryPart;
+	}
+
+	return i;
+}
 
 
 
