@@ -325,7 +325,10 @@ GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* fil
 }
 
 
-
+/* TODO:
+ * 	Agregar -v version
+ * 	-h help
+ */
 
 
 bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings) {
@@ -409,25 +412,30 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 
 
 
-
+/* TODO:
+ * Arreglar el codigo para que use header = P2 y no tener que tener un if si el archivo es stdout. Lo pidieron asi ellos.
+ * El output tiene que tener end of lines por cada fila:
+ *
+ * fila1
+ * fila2
+ * fila3
+ */
 
 
 bool printOutput(GraphicSettings *aGraphicSettings) {
-	fprintf(aGraphicSettings->fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
+	fprintf(aGraphicSettings->fileOutput, "P2 \n %u %u 255 \n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
 	int i,j;
 	for ( i = 0; i < aGraphicSettings->heightResolution; i++) {
 		for ( j = 0; j < aGraphicSettings->widthResolution; j++) {
-			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
+			unsigned char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright;
 
-			if (aGraphicSettings->fileOutput == stdout)
-				printf("%u",pixelToWrite);
-			else
-				fputc(pixelToWrite, aGraphicSettings->fileOutput);
-
+			//fputc(pixelToWrite, aGraphicSettings->fileOutput);
+			fprintf( aGraphicSettings->fileOutput,"%u",pixelToWrite);
 			if (ferror(aGraphicSettings->fileOutput)){
 				return false;
 			}
 		}
+		fprintf( aGraphicSettings->fileOutput,"\n");
 	}
 	if (aGraphicSettings->fileOutput != stdout)
 		fclose(aGraphicSettings->fileOutput);
