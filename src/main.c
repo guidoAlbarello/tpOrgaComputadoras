@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <juliaSet.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
@@ -15,6 +14,8 @@
 #define SPACE_WIDTH 4
 #define BRIGHT_BOOST 1
 #define DEFAULT_FILE "file.pgm"
+#define MAX_ITERACION 255
+#define COND_CORTE_MOD_CUADRADO 4.0
 
 #define WIDTH_OPTION 'w'
 #define HEIGHT_OPTION 'H'
@@ -33,6 +34,12 @@
 #define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the system could not open the output file."
 #define ERROR_TRYING_TO_WRITE_TO_FILE "fatal: the system could not write to output file."
 #define POSIBLE_OPTIONS "r:C:c:w:H:o:"
+
+
+typedef struct ComplexNumber{
+	double realPart;
+	double imaginaryPart;
+} ComplexNumber;
 
 
 typedef struct SetSpace {
@@ -60,19 +67,25 @@ typedef struct GraphicSettings {
 
 
 
-bool isAValidNumberInAString(char* numberRepresentedAsAString);
-void invalidParameter(char* errorMSG);
-bool validateResolutionArgument(char* argument, int* width, int* height);
-bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings);
-SetSpace *initializeDefaultSpace();
-GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile);
-bool printOutput(GraphicSettings *aGraphicSettings);
-FILE* getFileOutput(char *aFileName);
-unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c);
-void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWidth, int resolutionHeight);
-void findJuliaSet(SetSpace *aSpace, Pixel **pixels, int width, int height);
+double squareAbsoluteValue(ComplexNumber z){
 
+	double squareSum = (z.realPart * z.realPart) + (z.imaginaryPart * z.imaginaryPart);
+	return squareSum;
+}
 
+unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c){
+	int i;
+	for(i = 0; i < MAX_ITERACION; i++){
+		if(squareAbsoluteValue(z) > COND_CORTE_MOD_CUADRADO)
+			break;
+		double oldRealPart = z.realPart;
+		double oldImaginaryPart = z.imaginaryPart;
+		z.realPart = (oldRealPart * oldRealPart) - (oldImaginaryPart * oldImaginaryPart) + c.realPart;
+		z.imaginaryPart = (2 * oldRealPart * oldImaginaryPart) + c.imaginaryPart;
+	}
+
+	return i;
+}
 
 
 
@@ -245,6 +258,79 @@ bool shouldPrintToStandardOutput(char* argument) {
 
 
 
+FILE* getFileOutput(char *aFileName) {
+	 FILE* outputFile = fopen(aFileName, "wb");
+
+	return outputFile;
+}
+
+
+SetSpace *initializeDefaultSpace() {
+
+	SetSpace *aNewSpace = malloc(sizeof(SetSpace));
+
+	aNewSpace->offset.realPart = OFFSET_REAL_PART;
+	aNewSpace->offset.imaginaryPart = OFFSET_IMAGINARY_PART;
+
+	aNewSpace->constantC.realPart = C_REAL_PART;
+	//No toma si defino una constante con ese valor
+	aNewSpace->constantC.imaginaryPart = -0.01;
+
+	aNewSpace->width = SPACE_WIDTH;
+	aNewSpace->height = SPACE_HEIGHT;
+
+	return aNewSpace;
+}
+
+
+
+GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile) {
+
+	GraphicSettings * aNewGraphicSettings = malloc(sizeof(GraphicSettings));
+	aNewGraphicSettings->widthResolution = widtRes;
+	aNewGraphicSettings->heightResolution = heightRes;
+
+
+	int i,j;
+	//aNewGraphicSettings->pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
+	aNewGraphicSettings->pixelGrid = (Pixel **)malloc(sizeof(Pixel *) * aNewGraphicSettings->heightResolution);
+	for (i = 0; i < aNewGraphicSettings->heightResolution; i++) {
+		aNewGraphicSettings->pixelGrid[i] = (Pixel *)malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution);
+		for (j = 0; j < aNewGraphicSettings->widthResolution; j++) {
+			Pixel aNewPixel;
+			aNewPixel.position.realPart = i;
+			aNewPixel.position.imaginaryPart = j;
+			aNewPixel.bright = 0;
+			aNewGraphicSettings->pixelGrid[i][j] = aNewPixel;
+		}
+	}
+
+	if (printToAFile) {
+		 aNewGraphicSettings->fileOutput = getFileOutput(file);
+		 if(aNewGraphicSettings->fileOutput == NULL){
+				int i;
+			 	for( i = 0; i < aNewGraphicSettings->heightResolution;i++){
+		 			free(aNewGraphicSettings->pixelGrid[i]);
+			 	}
+			 	free(aNewGraphicSettings->pixelGrid);
+			 	free(aNewGraphicSettings);
+				return NULL;
+		 }
+	}
+	else {
+		aNewGraphicSettings->fileOutput = stdout;
+	}
+
+	return aNewGraphicSettings;
+}
+
+
+/* TODO:
+ * 	Agregar -v version
+ * 	-h help
+ */
+
+
 bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpace, GraphicSettings** graphicSettings) {
 
 	int widthResolution = WIDTH;
@@ -323,84 +409,31 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 	return true;
 }
 
-
-
-SetSpace *initializeDefaultSpace() {
-
-	SetSpace *aNewSpace = malloc(sizeof(SetSpace));
-
-	aNewSpace->offset.realPart = OFFSET_REAL_PART;
-	aNewSpace->offset.imaginaryPart = OFFSET_IMAGINARY_PART;
-
-	aNewSpace->constantC.realPart = C_REAL_PART;
-	//No toma si defino una constante con ese valor
-	aNewSpace->constantC.imaginaryPart = -0.01;
-
-	aNewSpace->width = SPACE_WIDTH;
-	aNewSpace->height = SPACE_HEIGHT;
-
-	return aNewSpace;
-}
-
-
-
-GraphicSettings *initializeGraphicSettings(int widtRes, int heightRes, char* file, bool printToAFile) {
-
-	GraphicSettings * aNewGraphicSettings = malloc(sizeof(GraphicSettings));
-	aNewGraphicSettings->widthResolution = widtRes;
-	aNewGraphicSettings->heightResolution = heightRes;
-
-	//aNewGraphicSettings->pixelGrid = malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution * aNewGraphicSettings->heightResolution);
-	aNewGraphicSettings->pixelGrid = (Pixel **)malloc(sizeof(Pixel *) * aNewGraphicSettings->heightResolution);
-	int i;
-	int j;
-	for ( i = 0; i < aNewGraphicSettings->heightResolution; i++) {
-		aNewGraphicSettings->pixelGrid[i] = (Pixel *)malloc(sizeof(Pixel) * aNewGraphicSettings->widthResolution);
-		for (j = 0; j < aNewGraphicSettings->widthResolution; j++) {
-			Pixel aNewPixel;
-			aNewPixel.position.realPart = i;
-			aNewPixel.position.imaginaryPart = j;
-			aNewPixel.bright = 0;
-			aNewGraphicSettings->pixelGrid[i][j] = aNewPixel;
-		}
-	}
-
-	if (printToAFile) {
-		 aNewGraphicSettings->fileOutput = getFileOutput(file);
-		 if(aNewGraphicSettings->fileOutput == NULL){
-			 	for(i = 0; i < aNewGraphicSettings->heightResolution;i++){
-		 			free(aNewGraphicSettings->pixelGrid[i]);
-			 	}
-			 	free(aNewGraphicSettings->pixelGrid);
-			 	free(aNewGraphicSettings);
-				return NULL;
-		 }
-	}
-	else {
-		aNewGraphicSettings->fileOutput = stdout;
-	}
-
-	return aNewGraphicSettings;
-}
-
+/* TODO:
+ * Arreglar el codigo para que use header = P2 y no tener que tener un if si el archivo es stdout. Lo pidieron asi ellos.
+ * El output tiene que tener end of lines por cada fila:
+ *
+ * fila1
+ * fila2
+ * fila3
+ */
 
 
 bool printOutput(GraphicSettings *aGraphicSettings) {
-	fprintf(aGraphicSettings->fileOutput, "P5\n%u %u 255\n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
+
+	fprintf(aGraphicSettings->fileOutput, "P2 \n %u %u 255 \n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
 	int i,j;
 	for ( i = 0; i < aGraphicSettings->heightResolution; i++) {
 		for ( j = 0; j < aGraphicSettings->widthResolution; j++) {
-			char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright * BRIGHT_BOOST;
+			unsigned char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright;
 
-			if (aGraphicSettings->fileOutput == stdout)
-				printf("%u",pixelToWrite);
-			else
-				fputc(pixelToWrite, aGraphicSettings->fileOutput);
-
+			//fputc(pixelToWrite, aGraphicSettings->fileOutput);
+			fprintf( aGraphicSettings->fileOutput,"%u",pixelToWrite);
 			if (ferror(aGraphicSettings->fileOutput)){
 				return false;
 			}
 		}
+		fprintf( aGraphicSettings->fileOutput,"\n");
 	}
 	if (aGraphicSettings->fileOutput != stdout)
 		fclose(aGraphicSettings->fileOutput);
@@ -409,11 +442,6 @@ bool printOutput(GraphicSettings *aGraphicSettings) {
 
 
 
-FILE* getFileOutput(char *aFileName) {
-	 FILE* outputFile = fopen(aFileName, "wb");
-
-	return outputFile;
-}
 
 
 
@@ -434,6 +462,7 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWid
 
 	double positionIncrementRealAxis = startPointRealAxis;
 	double positionIncrementImaginaryAxis = startPointImaginaryAxis;
+	
 	int i,j;
 	for (i = 0; i < resolutionHeight; i++) {
 		for (j = 0; j < resolutionWidth; j++) {

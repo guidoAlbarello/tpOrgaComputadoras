@@ -1,5 +1,3 @@
-#/bin/bash
-
 
 COLOR="\033[33m"
 DEF_COLOR="\033[0m"
