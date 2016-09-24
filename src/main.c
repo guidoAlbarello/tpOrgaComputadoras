@@ -50,7 +50,7 @@ typedef struct SetSpace {
 } SetSpace;
 
 typedef struct Pixel {
-	unsigned char bright;
+	int bright;
 	ComplexNumber position;
 } Pixel;
 
@@ -73,7 +73,7 @@ double squareAbsoluteValue(ComplexNumber z){
 	return squareSum;
 }
 
-unsigned char calculateEscapeVelocity(ComplexNumber z, ComplexNumber c){
+int calculateEscapeVelocity(ComplexNumber z, ComplexNumber c){
 	int i;
 	for(i = 0; i < MAX_ITERACION; i++){
 		if(squareAbsoluteValue(z) > COND_CORTE_MOD_CUADRADO)
@@ -409,34 +409,25 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 	return true;
 }
 
-/* TODO:
- * Arreglar el codigo para que use header = P2 y no tener que tener un if si el archivo es stdout. Lo pidieron asi ellos.
- * El output tiene que tener end of lines por cada fila:
- *
- * fila1
- * fila2
- * fila3
- */
+
+bool printHeader(FILE* output,int width,int height){
+	if ( fprintf(output, "P2\n%u %u\n255\n", width, height) < 0 ) return false;
+	return true;
+}
 
 
-bool printOutput(GraphicSettings *aGraphicSettings) {
-
-	fprintf(aGraphicSettings->fileOutput, "P2 \n %u %u 255 \n", aGraphicSettings->widthResolution, aGraphicSettings->heightResolution);
-	int i,j;
-	for ( i = 0; i < aGraphicSettings->heightResolution; i++) {
-		for ( j = 0; j < aGraphicSettings->widthResolution; j++) {
-			unsigned char pixelToWrite = aGraphicSettings->pixelGrid[i][j].bright;
-
-			//fputc(pixelToWrite, aGraphicSettings->fileOutput);
-			fprintf( aGraphicSettings->fileOutput,"%u",pixelToWrite);
-			if (ferror(aGraphicSettings->fileOutput)){
-				return false;
-			}
+bool printOutput(FILE* fileOutput, int widthResolution, int heightResolution,Pixel** pixelGrid) {
+	if(!printHeader(fileOutput,widthResolution,heightResolution)) return false;
+	int row,column;
+	for ( row = 0; row < heightResolution; row++) {
+		for ( column = 0; column < widthResolution; column++) {
+			int pixelToWrite = pixelGrid[row][column].bright;
+			if (fprintf( fileOutput,"%i ",pixelToWrite) < 0 ) return false;
 		}
-		fprintf( aGraphicSettings->fileOutput,"\n");
+		if(fprintf( fileOutput,"\n") < 0 ) return false;
 	}
-	if (aGraphicSettings->fileOutput != stdout)
-		fclose(aGraphicSettings->fileOutput);
+	if (fileOutput != stdout)
+		fclose(fileOutput);
 	return true;
 }
 
@@ -462,7 +453,7 @@ void calculatePixelsPosition(SetSpace *aSpace, Pixel **pixels, int resolutionWid
 
 	double positionIncrementRealAxis = startPointRealAxis;
 	double positionIncrementImaginaryAxis = startPointImaginaryAxis;
-	
+
 	int i,j;
 	for (i = 0; i < resolutionHeight; i++) {
 		for (j = 0; j < resolutionWidth; j++) {
@@ -527,7 +518,7 @@ int main(int argc, char *argv[]) {
 
 	findJuliaSet(aSpace, theGraphicSettings->pixelGrid, theGraphicSettings->widthResolution, theGraphicSettings->heightResolution);
 
-	if(!printOutput(theGraphicSettings)){
+	if(!printOutput(theGraphicSettings->fileOutput,theGraphicSettings->widthResolution,theGraphicSettings->heightResolution,theGraphicSettings->pixelGrid)){
 		clean(aSpace,theGraphicSettings);
 		fprintf(stderr, "%s\n", ERROR_TRYING_TO_WRITE_TO_FILE);
 		exit(EXIT_FAILURE);
