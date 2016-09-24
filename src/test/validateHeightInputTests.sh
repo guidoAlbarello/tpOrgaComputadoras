@@ -15,23 +15,23 @@ function runAndPrint {
 echo -e "$COLOR"
 echo -e "PRUEBAS DE VALIDACION DE PARAMETROS: ALTO DEL RECTANGULO\n"
 
-PRUEBA="./tp0 -H -200"
+PRUEBA="./tp0 -o "file.pgm" -H -200"
 runAndPrint
 
-PRUEBA="./tp0 -H 300"
+PRUEBA="./tp0 -o "file.pgm" -H 300"
 runAndPrint
 
-PRUEBA="./tp0 -H 3"
+PRUEBA="./tp0 -o "file.pgm" -H 3"
 runAndPrint
 
-PRUEBA="./tp0 -H 1.02"
+PRUEBA="./tp0 -o "file.pgm" -H 1.02"
 runAndPrint
 
-PRUEBA="./tp0 -H asdf"
+PRUEBA="./tp0 -o "file.pgm" -H asdf"
 runAndPrint
 
-PRUEBA="./tp0 -H "
+PRUEBA="./tp0 -o "file.pgm" -H "
 runAndPrint
 
-PRUEBA="./tp0 -H 0"
+PRUEBA="./tp0 -o "file.pgm" -H 0"
 runAndPrint

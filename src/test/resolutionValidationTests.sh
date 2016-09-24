@@ -20,17 +20,17 @@ function runAndPrint {
   echo -e "\n"
 }
 
-PRUEBA="./tp0 -r 300x200"
+PRUEBA="./tp0 -o "file.pgm" -r 300x200"
 runAndPrint
 
-PRUEBA="./tp0 -r 100x"
+PRUEBA="./tp0 -o "file.pgm" -r 100x"
 runAndPrint
 
-PRUEBA="./tp0 -r"
+PRUEBA="./tp0 -o "file.pgm" -r"
 runAndPrint
 
-PRUEBA="./tp0 -r asdf"
+PRUEBA="./tp0 -o "file.pgm" -r asdf"
 runAndPrint
 
-PRUEBA="./tp0 -r 10x1alskdj"
+PRUEBA="./tp0 -o "file.pgm" -r 10x1alskdj"
 runAndPrint

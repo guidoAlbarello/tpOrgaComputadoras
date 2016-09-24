@@ -13,7 +13,6 @@
 #define SPACE_HEIGHT 4
 #define SPACE_WIDTH 4
 #define BRIGHT_BOOST 1
-#define DEFAULT_FILE "file.pgm"
 #define MAX_ITERACION 255
 #define COND_CORTE_MOD_CUADRADO 4.0
 
@@ -23,6 +22,8 @@
 #define RESOLUTION 'r'
 #define CONSTANTC 'C'
 #define CENTER 'c'
+#define HELP_OPTION 'h'
+#define VERSION_OPTION 'v'
 #define ERROR_INVALID_RESOLUTION "fatal: invalid resolution specification."
 #define ERROR_INVALID_CONSTANTC "fatal: invalid constant c specification."
 #define ERROR_UNKNOWN_ARGUMENT "fatal: invalid parameter specification."
@@ -33,7 +34,7 @@
 #define ERROR_INVALID_FILE "fatal: invalid file specification."
 #define ERROR_TRYING_TO_OPEN_THE_FILE "fatal: the system could not open the output file."
 #define ERROR_TRYING_TO_WRITE_TO_FILE "fatal: the system could not write to output file."
-#define POSIBLE_OPTIONS "r:C:c:w:H:o:"
+#define POSIBLE_OPTIONS "r:C:c:w:H:o:hv"
 
 
 typedef struct ComplexNumber{
@@ -64,7 +65,17 @@ typedef struct GraphicSettings {
 
 
 
+void printHelp(){
 
+	printf("Utilizacion:\n");
+	printf("-r: permite cambiar la resolucion de la imagen generada. El valor por defecto sera de 640x480 puntos.\n	");
+	printf("-c: para especificar el centro de la imagen, el punto central de la porcion del plano complejo dibujada, expresado en forma binomica (i.e. a + bi). Por defecto usaremos 0 + 0i.\n");
+	printf("-C: determina el parametro c, tambien expresado en forma binomica. El valor por defecto sera 0,285 − 0,01i.\n" );
+	printf("-w: especifica el ancho del rectangulo que contiene la region del plano complejo que estamos por dibujar. Valor por defecto: 4. Notar que c es un parametro del programa.\n" );
+	printf("-H: sirve, en forma similar, para especificar el alto del rectangulo a dibujar. Valor por defecto: 4.\n");
+	printf("-o:[OBLIGATORIO] permite colocar la imagen de salida, (en formato PGM [4]) en el archivo pasado como argumento; o por salida estandar -stdout- si el argumento es “-”.\n" );
+
+}
 
 
 double squareAbsoluteValue(ComplexNumber z){
@@ -105,6 +116,7 @@ bool isAValidNumberInAString(char* numberRepresentedAsAString) {
 
 void invalidParameter(char* errorMSG) {
 	fprintf(stderr, "%s\n", errorMSG);
+	fprintf(stderr, "\nPara acceder a la documentacion utilizar:\n -h\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -337,7 +349,7 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 	int heightResolution = HEIGHT;
 	bool printToAFile = true;
 
-	char file[] = DEFAULT_FILE;
+	char file[20]= "";
 	*setSpace = initializeDefaultSpace();
 
 	int argumentOption;
@@ -389,6 +401,14 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 				strcpy(file, optarg);
 			}
 			break;
+		case HELP_OPTION:
+			printHelp();
+			exit(0);
+			break;
+		case VERSION_OPTION:
+			printf("Julia Set Trabajo practico version 1.0.0\n");
+			exit(0);
+			break;
 		case '?'://ALGUN PARAMETRO NO TIENE PAR
 			free((*setSpace));
 			invalidParameter(ERROR_OPTION_WITH_NO_PARAMETER);
@@ -399,6 +419,11 @@ bool inputValidationAndInitialization(int argc, char* argv[], SetSpace** setSpac
 			abort();
 		}
 
+	if(strlen(file) == 0) {
+		free((*setSpace));
+		invalidParameter(ERROR_INVALID_FILE);
+	}
+	
 	*graphicSettings = initializeGraphicSettings(widthResolution, heightResolution, file, printToAFile);
 
 	if(*graphicSettings == NULL){
@@ -506,7 +531,6 @@ void clean(SetSpace* aSpace, GraphicSettings* theGraphicSettings){
 
 
 int main(int argc, char *argv[]) {
-
 	SetSpace* aSpace;
 	GraphicSettings* theGraphicSettings;
 

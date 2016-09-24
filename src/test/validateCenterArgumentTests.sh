@@ -16,16 +16,16 @@ function runAndPrint {
 
 
 
-PRUEBA="./tp0 -c 300x200"
+PRUEBA="./tp0 -o "file.pgm" -c 300x200"
 runAndPrint
 
-PRUEBA="./tp0 -c 10+5i"
+PRUEBA="./tp0 -o "file.pgm" -c 10+5i"
 runAndPrint
 
-PRUEBA="./tp0 -c"
+PRUEBA="./tp0 -o "file.pgm" -c"
 runAndPrint
 
-PRUEBA="./tp0 -c asdf"
+PRUEBA="./tp0 -o "file.pgm" -c asdf"
 runAndPrint
 
 PRUEBA="./tp0 -c 10+i"

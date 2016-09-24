@@ -16,17 +16,17 @@ echo -e "$COLOR"
 echo -e "PRUEBAS DE VALIDACION DE PARAMETROS: ANCHO DEL RECTANGULO\n"
 
 
-PRUEBA="./tp0 -w 3"
+PRUEBA="./tp0 -o "file.pgm" -w 3"
 runAndPrint
 
-PRUEBA="./tp0 -w 1.02"
+PRUEBA="./tp0 -o "file.pgm" -w 1.02"
 runAndPrint
 
-PRUEBA="./tp0 -w asdf"
+PRUEBA="./tp0 -o "file.pgm" -w asdf"
 runAndPrint
 
-PRUEBA="./tp0 -w "
+PRUEBA="./tp0 -o "file.pgm" -w "
 runAndPrint
 
-PRUEBA="./tp0 -w 0"
+PRUEBA="./tp0 -o "file.pgm" -w 0"
 runAndPrint

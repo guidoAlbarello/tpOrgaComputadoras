@@ -16,21 +16,21 @@ function runAndPrint {
   echo -e "\n"
 }
 
-PRUEBA="./tp0 -C 300x200"
+PRUEBA="./tp0 -o "file.pgm" -C 300x200"
 runAndPrint
 
 
-PRUEBA="./tp0 -C 10+5i"
+PRUEBA="./tp0 -o "file.pgm" -C 10+5i"
 runAndPrint
 
-PRUEBA="./tp0 -C"
+PRUEBA="./tp0 -o "file.pgm" -C"
 runAndPrint
 
-PRUEBA="./tp0 -C asdf"
+PRUEBA="./tp0 -o "file.pgm" -C asdf"
 runAndPrint
 
-PRUEBA="./tp0 -C 10+i"
+PRUEBA="./tp0 -o "file.pgm" -C 10+i"
 runAndPrint
 
-PRUEBA="./tp0 -C -0.4+0.6i"
+PRUEBA="./tp0 -o "file.pgm" -C -0.4+0.6i"
 runAndPrint
