@@ -66,14 +66,15 @@ typedef struct GraphicSettings {
 
 
 void printHelp(){
-
-	printf("Utilizacion:\n");
-	printf("-r: permite cambiar la resolucion de la imagen generada. El valor por defecto sera de 640x480 puntos.\n	");
-	printf("-c: para especificar el centro de la imagen, el punto central de la porcion del plano complejo dibujada, expresado en forma binomica (i.e. a + bi). Por defecto usaremos 0 + 0i.\n");
-	printf("-C: determina el parametro c, tambien expresado en forma binomica. El valor por defecto sera 0,285 − 0,01i.\n" );
-	printf("-w: especifica el ancho del rectangulo que contiene la region del plano complejo que estamos por dibujar. Valor por defecto: 4. Notar que c es un parametro del programa.\n" );
-	printf("-H: sirve, en forma similar, para especificar el alto del rectangulo a dibujar. Valor por defecto: 4.\n");
-	printf("-o:[OBLIGATORIO] permite colocar la imagen de salida, (en formato PGM [4]) en el archivo pasado como argumento; o por salida estandar -stdout- si el argumento es “-”.\n" );
+	printf("| ----------- |\n");
+	printf("| Utilización |\n");
+	printf("| ----------- |\n");
+	printf("\n\n-r: Permite cambiar la resolución de la imagen generada. El valor por defecto sera de 640x480 puntos.\n");
+	printf("\n-c: Para especificar el centro de la imagen, el punto central de la porción del plano complejo dibujada, expresado en forma binómica (i.e. a + bi). Por defecto usaremos 0 + 0i.\n");
+	printf("\n-C: Determina el parametro c, también expresado en forma binómica. El valor por defecto sera 0,285 − 0,01i.\n" );
+	printf("\n-w: Especifíca el ancho del rectangulo que contiene la región del plano complejo que estamos por dibujar.\n Valor por defecto: 4. Notar que c es un parametro del programa.\n" );
+	printf("\n-H: Sirve, en forma similar, para especificar el alto del rectangulo a dibujar. Valor por defecto: 4.\n");
+	printf("\n-o:[OBLIGATORIO] Permite colocar la imagen de salida, (en formato PGM [4]) en el archivo pasado como argumento. O por salida estandar -stdout- si el argumento es “-”.\n" );
 
 }
 
