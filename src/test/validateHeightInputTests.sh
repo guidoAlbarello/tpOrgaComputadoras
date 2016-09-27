@@ -1,4 +1,4 @@
-#!/bin/bash
+
 cd ..
 
 COLOR="\033[33m"

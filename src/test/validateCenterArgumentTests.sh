@@ -1,5 +1,3 @@
-#!/bin/bash
-
 cd ..
 
 COLOR="\033[95m"
