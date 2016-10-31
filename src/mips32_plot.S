@@ -22,7 +22,7 @@
 					O_RES = 40
 					O_CPR = 44
 					O_CPI = 48
-					O_FP = 52
+					O_FD = 52
 					BUFFSIZE = 8192
 
 					.text
@@ -51,7 +51,29 @@ mips32_plot:
 		            move s3, zero 			#inicializamos contador de cantidad de bytes en buffer a cero
 		            li s4, BUFFSIZE			#limite del buffer
 		            #escribimos cabecera
-		
+					lw t0, 32(s6)
+					lw t1, 36(s6)
+					lw t2, 40(s6)
+					la t6, header 
+					bgt s3, s4, escribirEnArchivo
+		            la t4, buffer				#cargamos adres de buffer a escribir
+		            li t5, 4
+		            mul t5, s3, t5
+		            addu t4, t4, t5
+					lh t7, 0(t6)
+		            sh t7, 0(t4)			
+					lb t7, 8(t6)
+					sb t7, 2(t4)
+					sw t0, 3(t4)
+					la t0, endline
+					lb t7, 0(t0)
+					sb t7, 7(t4)
+					sw t1, 8(t4)
+					sb t7, 12(t4)
+					sw t2, 13(t4)
+					sb t7, 17(t4) 
+		            addiu s3, s3, 18
+					
 		
 		            #calculos de fractal
 		            sw zero, O_Y($fp)
@@ -121,14 +143,43 @@ loopC: 		  		mtc1 s2, $f14				#pasar int a float
 		            b loopC
 
 
-salirLoopC:   		bgt s3, s4, escribirEnArchivo
+salirLoopC:   		bgt s3, s4, escribirEnArchivo1
 		            la t0, buffer				#cargamos adres de buffer a escribir
 		            li t2, 4
 		            mul t1, s3, t2
 		            addu t0, t0, t1
-		            sw s2, 0(t0)			#guardamos c en buffer
+		            sb s2, 0(t0)			#guardamos c en buffer
 		            addiu s3, s3, 1
-
+					b escribirEndLine
+					
+escribirEnArchivo1:	li v0, 15			#write syscal value
+                    lw t0, O_FD($fp)
+                    move a0, t0
+                    la a1, buffer
+                    move a2, s3                     
+                    syscall
+                    blt v0, zero, mostrarError
+                    b salirLoopC
+					
+escribirEndLine:	bgt s3, s4, escribirEnArchivo2
+					la t0, buffer				#cargamos adres de buffer a escribir
+					la t4, endline
+		            li t2, 4
+		            mul t1, s3, t2
+		            addu t0, t0, t1
+		            sb t4, 0(t0)			#guardamos c en buffer
+		            addiu s3, s3, 1
+					b incrementoLoopX
+					
+escribirEnArchivo2:	li v0, 15			#write syscal value
+                    lw t0, O_FD($fp)
+                    move a0, t0
+                    la a1, buffer
+                    move a2, s3                     
+                    syscall
+                    blt v0, zero, mostrarError
+                    b escribirEndLine
+					
 incrementoLoopX:  	addiu s1, s1, 1
 	                l.s $f0, 16(s6)
 	                add.s $f13, $f13, $f0
@@ -142,8 +193,9 @@ salirLoopX: 		addiu s0, s0, 1
 #el flush y cerrar programa, stack frame y listo
 
 
-salirLoopY:         li v0, 15			#write syscal value
-                    lw t0, O_FP($fp)
+salirLoopY:         beqz s3, salir
+					li v0, 15			#write syscal value
+                    lw t0, O_FD($fp)
                     move a0, t0
                     la a1, buffer
                     move a2, s3 #aca puede ir s3 o BUFFSIZE porq tecnicamente
@@ -153,31 +205,12 @@ salirLoopY:         li v0, 15			#write syscal value
                     #cambiamos
                     syscall
                     blt v0, zero, mostrarError
-
-
-#aca se limpia la pila y desp se returnea al ra (guarda q a aca puede saltar desde cuando hay error al escribir. tener en cuenta q lo unico q cambia es q devuelve error code -1. entonces a partir de aca solo se tendria q hacer la limpieza de pila y retorno. guardar el argumento de v0 si todo se realizo correctamente antes de esta parte, asi no sobreescibe el valor de retorno si llegase a haber error en la escritura de archivo)
+					li v0, 0
 
 salir:              lw gp, O_GP($fp)
                     lw $fp, O_FP($fp)
                     addiu sp,sp, 64
                     jr ra
-
-
-
-escribirEnArchivo:  li v0, 15			#write syscal value
-                    lw t0, O_FP($fp)
-                    move a0, t0
-                    la a1, buffer
-                    
-                    move a2, s3 #aca puede ir s3 o BUFFSIZE porq tecnicamente
-                    #siempre entraria aca cuando elbufer se llena. pero por si
-                    #acaso dejo s3 por si es la ultima escritura y no se llega a
-                    #llenar el buffer. cualquer cosa si hay algun problema lo
-                    #cambiamos
-                    
-                    syscall
-                    blt v0, zero, mostrarError
-                    b incrementoLoopX
 
 mostrarError: 		li v0, 15   #write syscal
 		            li a0, 2			#stderrr file descriptor
@@ -198,5 +231,3 @@ mostrarError: 		li v0, 15   #write syscal
 		                         
 endline:        	.asciiz   "\n"
 header:         	.asciiz "P2\n"
-
-	
