@@ -55,14 +55,10 @@ mips32_plot:
 					lw t1, 36(s6)
 					lw t2, 40(s6)
 					la t6, header 
-					bgt s3, s4, escribirEnArchivo
 		            la t4, buffer				#cargamos adres de buffer a escribir
-		            li t5, 4
-		            mul t5, s3, t5
-		            addu t4, t4, t5
 					lh t7, 0(t6)
 		            sh t7, 0(t4)			
-					lb t7, 8(t6)
+					lb t7, 2(t6)
 					sb t7, 2(t4)
 					sw t0, 3(t4)
 					la t0, endline
@@ -73,7 +69,6 @@ mips32_plot:
 					sw t2, 13(t4)
 					sb t7, 17(t4) 
 		            addiu s3, s3, 18
-					
 		
 		            #calculos de fractal
 		            sw zero, O_Y($fp)
@@ -142,8 +137,7 @@ loopC: 		  		mtc1 s2, $f14				#pasar int a float
 		            addiu s2, s2, 1	#++c
 		            b loopC
 
-
-salirLoopC:   		bgt s3, s4, escribirEnArchivo1
+salirLoopC:   		bge s3, s4, escribirEnArchivo1
 		            la t0, buffer				#cargamos adres de buffer a escribir
 		            li t2, 4
 		            mul t1, s3, t2
@@ -153,31 +147,32 @@ salirLoopC:   		bgt s3, s4, escribirEnArchivo1
 					b escribirEndLine
 					
 escribirEnArchivo1:	li v0, 15			#write syscal value
-                    lw t0, O_FD($fp)
-                    move a0, t0
+                    lw a0, O_FD($fp)
                     la a1, buffer
                     move a2, s3                     
                     syscall
                     blt v0, zero, mostrarError
+					move s3, zero
                     b salirLoopC
 					
-escribirEndLine:	bgt s3, s4, escribirEnArchivo2
-					la t0, buffer				#cargamos adres de buffer a escribir
+escribirEndLine:	bge s3, s4, escribirEnArchivo2
+					la t0, buffer				
 					la t4, endline
+					lb t3, 0(t4)
 		            li t2, 4
 		            mul t1, s3, t2
 		            addu t0, t0, t1
-		            sb t4, 0(t0)			#guardamos c en buffer
+		            sb t3, 0(t0)			
 		            addiu s3, s3, 1
 					b incrementoLoopX
 					
 escribirEnArchivo2:	li v0, 15			#write syscal value
-                    lw t0, O_FD($fp)
-                    move a0, t0
+                    lw a0, O_FD($fp)
                     la a1, buffer
                     move a2, s3                     
                     syscall
                     blt v0, zero, mostrarError
+					move s3, zero
                     b escribirEndLine
 					
 incrementoLoopX:  	addiu s1, s1, 1
@@ -195,8 +190,7 @@ salirLoopX: 		addiu s0, s0, 1
 
 salirLoopY:         beqz s3, salir
 					li v0, 15			#write syscal value
-                    lw t0, O_FD($fp)
-                    move a0, t0
+                    lw a0, O_FD($fp)
                     la a1, buffer
                     move a2, s3 #aca puede ir s3 o BUFFSIZE porq tecnicamente
                     #siempre entraria aca cuando elbufer se llena. pero por si
@@ -220,14 +214,11 @@ mostrarError: 		li v0, 15   #write syscal
 		            li v0, -1
 		            b salir
 		            
-		            
 		            .data
 		            
-		            .align 2
+		            .align 1
 		            buffer: .space BUFFSIZE
-		            TextoError: .asciiz "i/o error.\n"
-		              
-		            .align 1   
+		            TextoError: .asciiz "i/o error.\n" 
 		                         
 endline:        	.asciiz   "\n"
 header:         	.asciiz "P2\n"
