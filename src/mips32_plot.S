@@ -1,6 +1,6 @@
 #include <mips/regdef.h>
 
-.align 2
+
 .set noreorder
 .cpload t9
 .set reorder
@@ -23,9 +23,36 @@
 					O_CPR = 44
 					O_CPI = 48
 					O_FD = 52
-					BUFFSIZE = 8192
+					BUFFSIZE = 40
+
+
+		            .data
+		    
+		    
+.MACRO store_word
+					sb t7, 0(t8)
+					srl t7, t7, 8
+					sb t7, 1(t8)
+					srl t7, t7, 8
+					sb t7, 2(t8)
+					srl t7,t7, 8
+					sb t7, 3(t8)
+.ENDM
+		    
+		    
+		    
+		            buffer: .space BUFFSIZE
+		            TextoError: .asciiz "i/o error.\n" 
+		                         
+endline:        	.asciiz   "\n"
+header:         	.asciiz "P2\n"
+
+
+
+
 
 					.text
+				
 					.ent mips32_plot
 					.globl mips32_plot
 mips32_plot:   
@@ -60,13 +87,22 @@ mips32_plot:
 		            sh t7, 0(t4)			
 					lb t7, 2(t6)
 					sb t7, 2(t4)
-					sw t0, 3(t4)
+					
+					addiu t8,t4,3			#storeword byte a byte
+					move t7,t0
+					store_word 				# sw t0, 3(t4)
+					
 					la t0, endline
 					lb t7, 0(t0)
 					sb t7, 7(t4)
 					sw t1, 8(t4)
 					sb t7, 12(t4)
-					sw t2, 13(t4)
+					
+					addiu t8,t4,13			#storeword byte a byte
+					move t7,t2
+					store_word 				#sw t2, 13(t4)
+					
+					
 					sb t7, 17(t4) 
 		            addiu s3, s3, 18
 		
@@ -214,11 +250,3 @@ mostrarError: 		li v0, 15   #write syscal
 		            li v0, -1
 		            b salir
 		            
-		            .data
-		            
-		            .align 1
-		            buffer: .space BUFFSIZE
-		            TextoError: .asciiz "i/o error.\n" 
-		                         
-endline:        	.asciiz   "\n"
-header:         	.asciiz "P2\n"
