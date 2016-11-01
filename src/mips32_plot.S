@@ -1,6 +1,6 @@
 #include <mips/regdef.h>
 
-
+.align 2
 .set noreorder
 .cpload t9
 .set reorder
@@ -23,7 +23,7 @@
 					O_CPR = 44
 					O_CPI = 48
 					O_FD = 52
-					BUFFSIZE = 40
+					BUFFSIZE = 8192
 
 
 		            .data
@@ -38,7 +38,6 @@
 					srl t7,t7, 8
 					sb t7, 3(t8)
 .ENDM
-		    
 		    
 		    
 		            buffer: .space BUFFSIZE
@@ -76,7 +75,7 @@ mips32_plot:
 		            sw t0, 52($fp)
 		
 		            move s3, zero 			#inicializamos contador de cantidad de bytes en buffer a cero
-		            li s4, BUFFSIZE			#limite del buffer
+		            
 		            #escribimos cabecera
 					lw t0, 32(s6)
 					lw t1, 36(s6)
@@ -112,26 +111,20 @@ mips32_plot:
 		            lw t0, 4(s6)
 		            sw t0, O_CI($fp)
 		            l.s $f11, O_CI($fp)
-		            l.s $f17, 36(s6)
+		            lw s7, 36(s6)
 		            
 #Print del header
 
 
-loopY:        		mtc1 s0, $f10			#pasar int a float
-		            cvt.s.w $f10, $f10  	#pasar int a float. esto tal vez s epuede obviar creando x y c como floats de una. ero como no es el tipo de dato dado me suena mal
-		            c.lt.s $f10, $f17
-		            bc1f salirLoopY
+loopY:        		bge s0,s7, salirLoopY
 		            sw zero, O_X($fp)
 		            lw s1, O_X($fp)
 		            lw t0, 0(s6)
 		            sw t0, O_CR($fp)
 		            l.s $f13, O_CR($fp)
-		            l.s $f16, 32(s6)
+		            lw s5, 32(s6)
 
-loopX:        		mtc1 s1, $f12			#pasar int a float
-		            cvt.s.w $f12, $f12
-		            c.lt.s $f12, $f16
-		            bc1f salirLoopX
+loopX:        		bge s1,s5,salirLoopX
 		            l.s $f0, O_CR($fp)
 		            s.s $f0, O_ZR($fp)
 		            l.s $f0, O_CI($fp)
@@ -139,13 +132,10 @@ loopX:        		mtc1 s1, $f12			#pasar int a float
 		
 		            sw zero, O_C($fp)
 		            lw s2, O_C($fp)
-		            l.s $f15, 40(s6)
+		            lw s4, 40(s6)
 
 
-loopC: 		  		mtc1 s2, $f14				#pasar int a float
-		            cvt.s.w $f14, $f14
-		            c.lt.s $f14, $f15			#compare $f14 < $f15
-		            bc1f salirLoopC 			#salta si no cumple
+loopC: 		  		bge s2,s4, salirLoopC
 		            l.s $f0, O_ZR($fp)
 		            l.s $f1, O_ZI($fp)
 		            mul.s $f2, $f0, $f0
@@ -173,11 +163,11 @@ loopC: 		  		mtc1 s2, $f14				#pasar int a float
 		            addiu s2, s2, 1	#++c
 		            b loopC
 
-salirLoopC:   		bge s3, s4, escribirEnArchivo1
+salirLoopC:   		li t0,BUFFSIZE
+					bge s3, t0, escribirEnArchivo1
 		            la t0, buffer				#cargamos adres de buffer a escribir
-		            li t2, 4
-		            mul t1, s3, t2
-		            addu t0, t0, t1
+		           
+		            addu t0, t0, s3
 		            sb s2, 0(t0)			#guardamos c en buffer
 		            addiu s3, s3, 1
 					b escribirEndLine
@@ -191,13 +181,13 @@ escribirEnArchivo1:	li v0, 15			#write syscal value
 					move s3, zero
                     b salirLoopC
 					
-escribirEndLine:	bge s3, s4, escribirEnArchivo2
+escribirEndLine:	li t0,BUFFSIZE
+					bge s3, t0, escribirEnArchivo2
 					la t0, buffer				
 					la t4, endline
 					lb t3, 0(t4)
-		            li t2, 4
-		            mul t1, s3, t2
-		            addu t0, t0, t1
+					
+				    addu t0, t0, s3
 		            sb t3, 0(t0)			
 		            addiu s3, s3, 1
 					b incrementoLoopX
