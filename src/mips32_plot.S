@@ -168,7 +168,7 @@ loopC: 		  		bge s2,s4, salirLoopC
 		            l.s $f6, O_ZI($fp)
 		            mul.s $f2, $f0, $f0
 		            mul.s $f12, $f6, $f6
-		            add.s $f4, $f0, $f6
+		            add.s $f4, $f2, $f12
 		            li.s $f10, 4
 		            c.le.s $f10, $f4
 		            bc1t salirLoopC				#break
@@ -352,4 +352,4 @@ fin:				jr t9
 
 
 		            
-		         
+		   
