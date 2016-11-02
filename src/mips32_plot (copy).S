@@ -2,10 +2,9 @@
 #include <sys/syscall.h>
 
 
-					O_RA = 64
 					O_FP = 60
 					O_GP = 56
-					O_AO = 68
+					O_AO = 64
 					O_CR = 0
 					O_CI = 4
 					O_ZR = 8
@@ -21,27 +20,30 @@
 					O_CPI = 48
 					O_FD = 52
 					BUFFSIZE = 8192
+		    
+.MACRO store_word
+					sb t7, 3(t8)
+					srl t7, t7, 8
+					sb t7, 2(t8)
+					srl t7, t7, 8
+					sb t7, 1(t8)
+					srl t7,t7, 8
+					sb t7, 0(t8)
+.ENDM
 
 		            .data
 		    
 					.align 2
-					
-terminator:   .asciiz ""
-		    
-numbers: .ascii "0123456789"
-		    
-		    
 		    
 buffer: .space BUFFSIZE
 		             
 
-header:         	.ascii "P2\n"
-endline:        	.ascii   "\n"
+header:         	.asciiz "P2\n"
+endline:        	.asciiz   "\n"
 
 TextoError: .asciiz "i/o error.\n" 
 		             
-		             
-		            
+
 
 					.text
 				
@@ -49,10 +51,9 @@ TextoError: .asciiz "i/o error.\n"
 					.globl mips32_plot
 mips32_plot:   
 		            #inicializacion stack frame
-		            subu sp, sp, 68
+		            subu sp, sp, 64
 		            sw $fp, O_FP(sp)
 		            sw gp, O_GP(sp)
-		            sw ra, O_RA(sp)
 		            move $fp, sp
 		            move t0, $fp
 		
@@ -72,60 +73,34 @@ mips32_plot:
 		            move s3, zero 			#inicializamos contador de cantidad de bytes en buffer a cero
 		            
 		            #escribimos cabecera
-					
-					
-					
+					lw t0, 32(s6)
+					lw t1, 36(s6)
+					lw t2, 40(s6)
 					la t6, header 
 		            la t4, buffer				#cargamos adres de buffer a escribir
-					
-					#GUARDO HEADER
-					lb t7, 0(t6)
-		            sb t7, 0(t4)
-		            lb t7, 1(t6)
-		            sb t7, 1(t4)
-		            lb t7, 2(t6)
-		            sb t7, 2(t4)
+					lw t7, 0(t6)
+		            sw t7, 0(t4)
 		            
-		            addiu s3, s3, 3
-		            
-		            #GUARDO XRES DE A BYTES
-		            lw s2, 32(s6)	
-		            la t9, xres_endline
-		            b print_uinteger
-		            
-		            #GUARDO UN ENDLINE
-xres_endline:		la t3, endline
-					lb t3, 0(t3)
-					addu t7,t4,s3
-					sb t3, 0(t7)
-					addiu s3, s3, 1
+		            sw t0, 4(t4)
+		            la t3, endline
+					lw t3, 0(t3)
+					sw t3, 8(t4)
 					
-					#GUARDO YRES DE A BYTES
-					lw s2, 36(s6)	# yres
-		            la t9, yres_endline
-		            b print_uinteger
-		            
-		            #otro endline
-yres_endline:		la t3, endline
-					lb t3, 0(t3)
-					addu t7,t4,s3
-					sb t3, 0(t7)
-					addiu s3, s3, 1
+		            sw t1, 12(t4)
+					sw t3, 16(t4)
 					
-					#CARGO LAS SHADES
-					lw s2, 40(s6)	
-					la t9, lastHeaderEndLine
-					b print_uinteger
-					
-					
-					#ultimo endline header
-lastHeaderEndLine:	la t3, endline
-					lb t3, 0(t3)
-					addu t7,t4,s3
-					sb t3, 0(t7)
-					addiu s3, s3, 1
+					sw t2, 20(t4)
+					sw t3, 24(t4)
 		            			
+
+		            addiu s3, s3, 28
 					
+					li v0, SYS_write
+					li a0, 1
+					la a1, buffer
+					li a2, 28
+					syscall
+		
 		
 		            #calculos de fractal
 		            sw zero, O_Y($fp)
@@ -157,13 +132,11 @@ loopX:        		bge s1,s5,salirLoopX
 		            s.s $f0, O_ZI($fp)
 		
 		            sw zero, O_C($fp)
-		            #lw s2, O_C($fp)
-		            move s2, zero
+		            lw s2, O_C($fp)
 		            lw s4, 40(s6)
 
 
 loopC: 		  		bge s2,s4, salirLoopC
-
 		            l.s $f0, O_ZR($fp)
 		            l.s $f6, O_ZI($fp)
 		            mul.s $f2, $f0, $f0
@@ -196,74 +169,44 @@ salirLoopC:   		li t0,BUFFSIZE
 		            la t0, buffer				#cargamos adres de buffer a escribir
 		           
 		            addu t0, t0, s3
-		           
-		            la t9, escribirEndLine
-					b print_uinteger			#sb s2, 0(t0)			#guardamos c en buffer
-											#b escribirEndLine
-											
-					
-					
+		            
+		            
+		            
+					sw s2, 0(t0)			#guardamos c en buffer
+		            addiu s3, s3, 4
+					b escribirEndLine
 					
 escribirEnArchivo1:	li v0, SYS_write			#write syscal value
                     lw a0, O_FD($fp)
                     la a1, buffer
                     move a2, s3
-                    
-                    la t0, terminator
-                    lb t0, 0(t0)
-                    addu t1, a1, s3
-                    sb t0, 0(t1)
-                    
                     syscall
-                    
+                    lw gp, O_GP(sp)
+					move $fp, sp
                     blt v0, zero, mostrarError
 					move s3, zero
-					la t1, buffer
-                    
-                    la t0, terminator
-                    lb t0, 0(t0)
-                    addu t1, t1, s3
-                    sb t0, 0(t1)
-					
                     b salirLoopC
 					
 escribirEndLine:	li t0,BUFFSIZE
 					bge s3, t0, escribirEnArchivo2
 					la t0, buffer				
 					la t4, endline
-					lb t4, 0(t4)
+					
 				    addu t0, t0, s3
-		            sb t4, 0(t0)			
-		            addiu s3, s3, 1
+		            sw t4, 0(t0)			
+		            addiu s3, s3, 4
 					b incrementoLoopX
 					
 escribirEnArchivo2:	li v0, SYS_write			#write syscal value
                     lw a0, O_FD($fp)
                     la a1, buffer
-                    
-                    la t0, terminator
-                    lb t0, 0(t0)
-                    addu t1, a1, s3
-                    sb t0, 0(t1)
                     move a2, s3
-                    
-                    
                     syscall
+                    lw gp, O_GP(sp)
+					move $fp, sp
 					
                     blt v0, zero, mostrarError
-                    
-                    la t1, buffer
-                    
-                    la t0, terminator
-                    lb t0, 0(t0)
-                    addu t1, t1, s3
-                    sb t0, 0(t1)
-                    
-                    
 					move s3, zero
-					
-					
-					
                     b escribirEndLine
 					
 incrementoLoopX:  	addiu s1, s1, 1
@@ -283,21 +226,21 @@ salirLoopY:         beqz s3, salir
 					li v0, SYS_write			#write syscal value
                     lw a0, O_FD($fp)
                     la a1, buffer
-                    
-                    la t0, terminator
-                    lb t0, 0(t0)
-                    addu t1, a1, s3
-                    sb t0, 0(t1)
-                    
-                    move a2, s3 
+                    move a2, s3 #aca puede ir s3 o BUFFSIZE porq tecnicamente
+                    #siempre entraria aca cuando elbufer se llena. pero por si
+                    #acaso dejo s3 por si es la ultima escritura y no se llega a
+                    #llenar el buffer. cualquer cosa si hay algun problema lo
+                    #cambiamos
                     syscall
+                    lw gp, O_GP(sp)
+                    move $fp, sp
                     
                     blt v0, zero, mostrarError
 					li v0, 0
 
 salir:              lw gp, O_GP($fp)
                     lw $fp, O_FP($fp)
-                    addiu sp,sp, 68
+                    addiu sp,sp, 64
                     jr ra
 
 mostrarError: 		li v0, SYS_write   #write syscal
@@ -310,46 +253,3 @@ mostrarError: 		li v0, SYS_write   #write syscal
 		            li v0, -1
 		            b salir
 		            
-		            
-		          
-		            
-		 	
-
-
-
-
-print_uinteger:		li t0, 10
-					li t7,10
-					
-					move t1,s2
-					li t6, 1
-					
-					
-calculoOrden:		divu t1,s2,t7
-					blt t1,t6, finCalculo
-					mul t7,t7,10
-					b calculoOrden
-					
-finCalculo:			divu t7,t7,10
-loopImpresion:		blt t7, t6, fin
-					divu t1, s2, t7
-					la t2, numbers
-					addu t2,t2,t1
-					lb	t1, 0(t2)
-					
-		            la t3 , buffer
-					addu t3,t3,s3
-					sb 	t1, 0(t3)
-					addiu s3,s3,1
-					
-					remu s2,s2,t7
-					
-					divu t7,t7,10
-					
-					b loopImpresion
-							
-fin:				jr t9
-
-
-		            
-		         
