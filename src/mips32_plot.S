@@ -151,11 +151,16 @@ loopY:        		bge s0,s7, salirLoopY
 		            lw s5, 32(s6)
 
 loopX:        		bge s1,s5,salirLoopX
-		            l.s $f0, O_CR($fp)
-		            s.s $f0, O_ZR($fp)
-		            l.s $f0, O_CI($fp)
-		            s.s $f0, O_ZI($fp)
-		
+		            #l.s $f0, O_CR($fp)
+		           # s.s $f0, O_ZR($fp)
+		           # l.s $f0, O_CI($fp)
+		           # s.s $f0, O_ZI($fp)
+					
+
+					#prueba
+					s.s $f14, O_ZR($fp)		
+					s.s $f16, O_ZI($fp)
+
 		            sw zero, O_C($fp)
 		            #lw s2, O_C($fp)
 		            move s2, zero
@@ -273,7 +278,7 @@ incrementoLoopX:  	addiu s1, s1, 1
 
 salirLoopX: 		addiu s0, s0, 1
 					l.s $f0, 20(s6)
-					add.s $f16, $f16, $f0
+					sub.s $f16, $f16, $f0
 					b loopY
 
 #el flush y cerrar programa, stack frame y listo
@@ -350,6 +355,3 @@ loopImpresion:		blt t7, t6, fin
 							
 fin:				jr t9
 
-
-		            
-		   
