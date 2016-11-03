@@ -32,7 +32,7 @@ numbers: .ascii "0123456789"
 		    
 		    
 		    
-buffer: .space BUFFSIZE
+buffer: .space BUFFSIZE + 3
 		             
 
 header:         	.ascii "P2\n"
