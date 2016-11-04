@@ -2,10 +2,10 @@
 #include <sys/syscall.h>
 
 
-					O_RA = 64
+					
 					O_FP = 60
 					O_GP = 56
-					O_AO = 68
+					O_AO = 64
 					O_CR = 0
 					O_CI = 4
 					O_ZR = 8
@@ -52,7 +52,6 @@ mips32_plot:
 		            subu sp, sp, 68
 		            sw $fp, O_FP(sp)
 		            sw gp, O_GP(sp)
-		            sw ra, O_RA(sp)
 		            move $fp, sp
 		            move t0, $fp
 		
